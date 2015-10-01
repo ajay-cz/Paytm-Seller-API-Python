@@ -105,3 +105,58 @@ class Paytm:
 
 		response = self.Session.post(url, headers = headers, params=params , data = json.dumps(payload))
 		return response.json()
+
+
+
+
+	def getCookie(self):
+		if self.sandbox == True:
+			url = 'https://fulfillment-dev.paytm.com/authorize'
+		else:
+			url = 'https://fulfillment.paytm.com/authorize'
+
+		params = {'authtoken':self.token}
+
+		response = self.Session.get(url, params = params)
+		return response.json()
+
+
+
+
+
+	def fetchOrders(self, limit=None, order_ids=None, status=None):
+		if self.sandbox == True:
+			url = 'https://fulfillment-dev.paytm.com/v1/merchant/%s/orders.json' % self.merchant_id
+		else:
+			url = 'https://fulfillment.paytm.com/v1/merchant/%s/orders.json' % self.merchant_id
+
+		params = {'authtoken':self.token,
+				  'limit':limit}
+
+		headers = {'Connection':'keep-alive',
+				   'Cache-Control':'max-age=0'}
+
+		response = self.Session.get(url, headers=headers ,params=params)
+		return response.json()
+
+	def acknowledgeOrder(self, order_id, item_ids):
+		if self.sandbox == True:
+			url = 'https://fulfillment-dev.paytm.com/v1/merchant/%s/fulfillment/ack/%s' % (self.merchant_id, order_id)
+		else:
+			url = 'https://fulfillment.paytm.com/v1/merchant/%s/fulfillment/ack/%s' % (self.merchant_id, order_id)
+
+		params = {'authtoken':self.token}
+
+		payload = {'item_ids':item_ids,
+				   'status':1}
+
+		response = self.Session.post(url, params=params, data=payload)
+		return response.json()
+
+
+
+# x = Paytm(21492, 'api.integration@paytm.com', 'paytm123', 'api-int', '251b2340185643ac7522ceee74287b5b', sandbox=True)
+# order_id = 1194469775
+# item_id = [1232622181]
+# print x.acknowledgeOrder(order_id, item_id)
+# # print x.fetchOrders(status=2, limit=3)
