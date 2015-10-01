@@ -152,11 +152,3 @@ class Paytm:
 
 		response = self.Session.post(url, params=params, data=payload)
 		return response.json()
-
-
-
-# x = Paytm(21492, 'api.integration@paytm.com', 'paytm123', 'api-int', '251b2340185643ac7522ceee74287b5b', sandbox=True)
-# order_id = 1194469775
-# item_id = [1232622181]
-# print x.acknowledgeOrder(order_id, item_id)
-# # print x.fetchOrders(status=2, limit=3)
