@@ -80,7 +80,7 @@ class Paytm:
 				  'skus':sku}
 
 		response = self.Session.get(url, params =params)
-		return response.json()
+		return response
 
 
 
@@ -105,7 +105,7 @@ class Paytm:
 		headers = {'Content-Type':'application/json'}
 
 		response = self.Session.post(url, headers = headers, params=params , data = json.dumps(payload))
-		return response.json()
+		return response
 
 
 
@@ -127,39 +127,60 @@ class Paytm:
 
 
 
-	def fetchOrders(self, limit=None, order_ids=None, status=None):
+	def fetchOrders(self, limit=None, order_ids_list=None, status=None):
 		if self.sandbox == True:
 			url = 'https://fulfillment-dev.paytm.com/v1/merchant/%s/orders.json' % self.merchant_id
 		else:
 			url = 'https://fulfillment.paytm.com/v1/merchant/%s/orders.json' % self.merchant_id
 
-		params = {'authtoken':self.token,
-				  'limit':limit}
+
+
+		try:
+			order_ids = ','.join(order_ids_list)    # '''Order ids should be string type.'''
+			params = {'authtoken':self.token,
+				  'limit':limit,
+				  'order_ids':order_ids,
+				  'status':status}
+		except TypeError:
+			order_ids = None
+			params = {'authtoken':self.token,
+				  'limit':limit,
+				  'order_ids':order_ids,
+				  'status':status}
 
 		headers = {'Connection':'keep-alive',
 				   'Cache-Control':'max-age=0'}
 
 		response = self.Session.get(url, headers=headers ,params=params)
-		return response.json()
+		return response
 
 
 
 
 
 
-	def acknowledgeOrder(self, order_id, item_ids):
+	def acknowledgeOrder(self, order_id, item_ids_list):
 		if self.sandbox == True:
 			url = 'https://fulfillment-dev.paytm.com/v1/merchant/%s/fulfillment/ack/%s' % (self.merchant_id, order_id)
 		else:
 			url = 'https://fulfillment.paytm.com/v1/merchant/%s/fulfillment/ack/%s' % (self.merchant_id, order_id)
 
+
+		'''
+		This method will take any valid order id and return the corresponding status.
+		If status or that order id is 2 then it will be changeds to 5 and order id will move to acknowledged.
+		If status is different than 2 then a corresponding error msg will occur.
+
+		order_id and item_ids in params are of int type.
+		'''
+
 		params = {'authtoken':self.token}
 
-		payload = {'item_ids':item_ids,
+		payload = {'item_ids':item_ids_list,
 				   'status':1}
 
 		response = self.Session.post(url, params=params, data=payload)
-		return response.json()
+		return response
 
 
 
@@ -176,14 +197,13 @@ class Paytm:
 				  'order_id':order_id}
 
 		response = self.Session.get(url, params=params)
-		return response.json()
+		return response
 
 
 
 
 
-####### TO-DO  ############
-	def createShipment(self, order_id):
+	def createShipment(self, order_id, shipping_description, shipper_id, tracking_url, tracking_number, order_item_id_list):
 		if self.sandbox == True:
 			url = 'https://fulfillment-dev.paytm.com/v1/merchant/%s/fulfillment/create/%s' % (self.merchant_id, order_id)
 		else:
@@ -191,7 +211,15 @@ class Paytm:
 
 		headers = {'Content-Type':'application/json'}
 		params = {'authtoken':self.token}
-###########################
+		payload = {'shipping_description':shipping_description,
+				   'shipper_id':shipper_id,
+				   'tracking_URL':tracking_url,
+				   'tracking_number':tracking_number,
+				   'order_item_ids':order_item_id_list}
+
+		response = self.Session.post(url, data=json.dumps(payload), headers=headers, params=params)
+		return response
+
 
 
 
@@ -217,15 +245,16 @@ class Paytm:
 
 
 
-
-###########  TO-DO  #############
 	def fetchFulfillments(self):
 		if self.sandbox == True:
 			url = 'https://fulfillment-dev.paytm.com/v1/merchant/%s/fulfillments.json' % self.merchant_id
 		else:
 			url = 'https://fulfillment.paytm.com/v1/merchant/%s/fulfillments.json' % self.merchant_id
-#################################
 
+		params = {'authtoken':self.token}
+
+		response = self.Session.get(url, params=params)
+		return response
 
 
 
@@ -237,21 +266,27 @@ class Paytm:
 			url = 'https://fulfillment.paytm.com/v1/merchant/%s/fulfillment/manifest'  % self.merchant_id
 
 
-		fulfillment_id_string = ','.join(fulfillment_ids_list)
+		try:
+			fulfillment_id_string = ','.join(fulfillment_ids_list)
+			payload = {'fulfillment_ids':fulfillment_id_string}
+		except TypeError:
+			print 'No fulfillment id provided.'
+			payload = {}
 
 		params = {'authtoken':self.token}
-		payload = {'fulfillment_ids':fulfillment_id_string}
 		response = self.Session.post(url, params=params, data=payload)
-		return response.json()
+		return response
 
 
 
 
-############# TO-DO  ################
 	def downloadManifest(self):
 		if self.sandbox == True:
 			url = 'https://fulfillment-dev.paytm.com/v1/merchant/%s/fulfillment/download/manifest' % self.merchant_id
 		else:
 			url = 'https://fulfillment.paytm.com/v1/merchant/%s/fulfillment/download/manifest' % self.merchant_id
+		
+		params = {'authtoken':self.token}
 
-#####################################
+		response = self.Session.get(url)
+		return response
