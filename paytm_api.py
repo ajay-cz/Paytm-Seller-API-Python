@@ -3,6 +3,7 @@ import json
 
 class Paytm:
 	def __init__(self, merchant_id, username, password, client_id, client_secret, sandbox=False):
+
 		self.merchant_id = merchant_id
 		self.username = username
 		self.password = password
@@ -15,11 +16,9 @@ class Paytm:
 
 
 
-
 	def getSession(self):
 		session = requests.Session()
 		return session
-
 
 
 
@@ -85,7 +84,7 @@ class Paytm:
 
 
 
-	def updateCatalogListing(self, sku_list, price_list, qty_list, mrp_list, status_list):
+	def updateCatalogListing(self, sku_list, quantity_list, price_list=None, mrp_list=None, status_list=None):
 		if self.sandbox == True:
 			url = 'https://catalogadmin-dev.paytm.com/v1/merchant/%s/product.json' % self.merchant_id
 		else:
@@ -93,13 +92,18 @@ class Paytm:
 
 		payload = {'data':[]}
 
-		for sku, price, qty, mrp, status in zip(sku_list, price_list, qty_list, mrp_list, status_list):
-			payload['data'].append({'sku':sku,
-								   'mrp':mrp,
-								   'price':price,
-								   'qty':qty,
-								   'status':status,
-								   'override_price':'yes'})
+		if mrp_list == None:
+			for sku, qty in zip(sku_list, quantity_list):
+				payload['data'].append({'paytm_sku':sku,
+										'qty':qty})
+		else:
+			for sku, price, qty, mrp, status in zip(sku_list, price_list, quantity_list, mrp_list, status_list):
+				payload['data'].append({'sku':sku,
+										'qty':qty,
+										'mrp':mrp,
+								   		'price':price,
+								   		'status':status,
+								   		'override_price':'yes'})
 
 		params = {'authtoken':self.token}
 		headers = {'Content-Type':'application/json'}
@@ -159,7 +163,7 @@ class Paytm:
 
 
 
-	def acknowledgeOrder(self, order_id, item_ids_list):
+	def acknowledgeOrder(self, order_id, order_item_id_list):
 		if self.sandbox == True:
 			url = 'https://fulfillment-dev.paytm.com/v1/merchant/%s/fulfillment/ack/%s' % (self.merchant_id, order_id)
 		else:
@@ -176,7 +180,7 @@ class Paytm:
 
 		params = {'authtoken':self.token}
 
-		payload = {'item_ids':item_ids_list,
+		payload = {'item_ids':order_item_id_list,
 				   'status':1}
 
 		response = self.Session.post(url, params=params, data=payload)
@@ -203,7 +207,7 @@ class Paytm:
 
 
 
-	def createShipment(self, order_id, shipping_description, shipper_id, tracking_url, tracking_number, order_item_id_list):
+	def createShipment(self, order_id, shipping_description, tracking_url, shipper_id, order_item_id):
 		if self.sandbox == True:
 			url = 'https://fulfillment-dev.paytm.com/v1/merchant/%s/fulfillment/create/%s' % (self.merchant_id, order_id)
 		else:
@@ -214,8 +218,7 @@ class Paytm:
 		payload = {'shipping_description':shipping_description,
 				   'shipper_id':shipper_id,
 				   'tracking_URL':tracking_url,
-				   'tracking_number':tracking_number,
-				   'order_item_ids':order_item_id_list}
+				   'order_item_ids':[order_item_id]}
 
 		response = self.Session.post(url, data=json.dumps(payload), headers=headers, params=params)
 		return response
@@ -245,13 +248,14 @@ class Paytm:
 
 
 
-	def fetchFulfillments(self):
+	def fetchFulfillments(self, order_item_id=None):
 		if self.sandbox == True:
 			url = 'https://fulfillment-dev.paytm.com/v1/merchant/%s/fulfillments.json' % self.merchant_id
 		else:
 			url = 'https://fulfillment.paytm.com/v1/merchant/%s/fulfillments.json' % self.merchant_id
 
-		params = {'authtoken':self.token}
+		params = {'authtoken':self.token,
+				  'order_item_id':order_item_id}
 
 		response = self.Session.get(url, params=params)
 		return response
@@ -280,13 +284,15 @@ class Paytm:
 
 
 
-	def downloadManifest(self):
+	def downloadManifest(self, manifest_id_list):
 		if self.sandbox == True:
 			url = 'https://fulfillment-dev.paytm.com/v1/merchant/%s/fulfillment/download/manifest' % self.merchant_id
 		else:
 			url = 'https://fulfillment.paytm.com/v1/merchant/%s/fulfillment/download/manifest' % self.merchant_id
 		
-		params = {'authtoken':self.token}
+		manifest_id_string = ','.join(manifest_id_list)
+		params = {'authtoken':self.token,
+				  'manifest_id': manifest_id_string}
 
-		response = self.Session.get(url)
+		response = self.Session.get(url, params=params)
 		return response
